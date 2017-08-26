@@ -13,13 +13,10 @@ class BatchManager(object):
     def hasNext(self):
         return self._queue or self._continue
 
-    #def next(self, visited):
     def next(self):
         if self.hasNext():
             if not self._continue:
                 # @TODO: later on, this pulls out 50 titles that may still be in the visited cache. deal with this
-                #import pdb; pdb.set_trace()
-                #self._queue = list(filter(lambda x: x not in visited, self._queue))
                 numTitles = min(50, len(self._queue))
                 # generate curTitles
                 print('new curTitles')

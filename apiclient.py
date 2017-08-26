@@ -23,24 +23,3 @@ class Site(object):
     def getLinks(self, title):
         endpoint = 'w/api.php?action=query&generator=links&format=json&titles=Fruit%20anatomy&gpllimit=500&redirects'
         endpoint = 'w/api.php?action=query&prop=links&format=json&titles=G}&pllimit=5000'
-
-"""
-import mwclient
-import mwapi
-import requests
-
-class APIClient(object):
-    site = mwclient.Site('en.wikipedia.org')
-    startPage = site.Pages['Segment']
-
-class Page(object):
-    def __init__(self, title):
-        self._title = title
-        self._data = 
-
-    @property
-    def name(self):
-        return self._title
-
-    pass
-"""
