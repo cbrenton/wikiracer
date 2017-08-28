@@ -4,22 +4,17 @@ from batchmanager import BatchManager
 
 def bfsPage(page, target):
     # @TODO: make this pretty
-    s_visited = set()
-    t_visited = set()
+    s_visited = {page: None}
+    t_visited = {target: None}
     s_bm = BatchManager()
     s_bm.addPages([page])
     t_bm = BatchManager()
     t_bm.addPages([target])
     while s_bm.hasNext() or t_bm.hasNext():
         # check for intersect
-        if intersectExists(s_visited, t_visited):
-            print('target found')
-            return target
-        '''
-        if bm.hasTarget(target):
-            print('target found')
-            return target
-        '''
+        intersect = findIntersect(s_visited, t_visited)
+        if intersect:
+            return findPath(s_visited, t_visited, intersect)
         s_results = s_bm.next()
         s_bm.addPages([n for n in s_results if n not in s_visited])
         s_visited.update(s_results)
@@ -31,11 +26,33 @@ def bfsPage(page, target):
     print('not found')
     return None
 
-def intersectExists(set1, set2):
-    intersect = set1.intersection(set2)
+def findPath(sourceVisited, targetVisited, intersect):
+    left = []
+    right = []
+
+    leftParent = sourceVisited[intersect]
+    while leftParent:
+        left.append(leftParent)
+        leftParent = sourceVisited[leftParent]
+    # @TODO: reverse order for left side since we're tracing backwards
+    left.reverse()
+
+    rightParent = targetVisited[intersect]
+    while rightParent:
+        right.append(rightParent)
+        rightParent = targetVisited[rightParent]
+
+    return left + [intersect] + right
+
+def findIntersect(sourceVisited, targetVisited):
+    sourceSet = set(sourceVisited.keys())
+    targetSet = set(targetVisited.keys())
+    intersect = sourceSet & targetSet
     if len(intersect) > 0:
         print('ayyyy')
         print(intersect)
-    return len(set1.intersection(set2)) > 0
+        return intersect.pop()
+    else:
+        return None
 
-bfsPage('Segment', 'The game')
+print(bfsPage('Segment', 'The game'))

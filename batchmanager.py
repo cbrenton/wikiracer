@@ -17,7 +17,8 @@ class BatchManager(object):
         if self.hasNext():
             if not self._continue:
                 # @TODO: later on, this pulls out 50 titles that may still be in the visited cache. deal with this
-                numTitles = min(50, len(self._queue))
+                #numTitles = min(50, len(self._queue))
+                numTitles = 1
                 # generate curTitles
                 print('new curTitles')
                 self._curTitles, self._queue = '|'.join(self._queue[:numTitles]), self._queue[numTitles:]
@@ -39,7 +40,11 @@ class BatchManager(object):
             self._continue = ''
             print('new batch')
         # @TODO: add handling for when this might fail
-        pages = [x['title'] for x in data['query']['pages'].values() if self.isValid(x['title'])]
+        # Handle red links
+        try:
+            pages = {x['title']:self._curTitles for x in data['query']['pages'].values() if self.isValid(x['title'])}
+        except KeyError:
+            pages = {}
         return pages
 
     def isValid(self, title):
