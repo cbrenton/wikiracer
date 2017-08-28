@@ -39,8 +39,20 @@ class BatchManager(object):
             self._continue = ''
             print('new batch')
         # @TODO: add handling for when this might fail
-        pages = [x['title'] for x in data['query']['pages'].values()]
+        pages = [x['title'] for x in data['query']['pages'].values() if self.isValid(x['title'])]
         return pages
+
+    def isValid(self, title):
+        prefixes = [
+            'Wikipedia:',
+            'Help:',
+            'Template:',
+            'Category:'
+        ]
+        for prefix in prefixes:
+            if title.startswith(prefix):
+                return False
+        return True
 
     def addPages(self, pages):
         self._queue += pages
