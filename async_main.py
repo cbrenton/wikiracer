@@ -18,12 +18,11 @@ async def main():
     numWorkers = int(sys.argv[1])
     print('{} workers'.format(numWorkers))
 
-    def parseCb(session, resp, title, fromSource=False):
+    def parseCb(session, resp, title):
         """
         Parse a response, adding a list of titles, a parent title, and a continue token
         to the response.
         """
-        print('parsing {}'.format(title))
         data = resp.json()
         
         # Handle red links
@@ -38,35 +37,41 @@ async def main():
         continueToken = None
         if data.get('continue') and data.get('continue').get('gplcontinue'):
             continueToken = data.get('continue').get('gplcontinue')
-            #print('continuing {} from {}'.format(title, continueToken))
         
         resp.pages = pages
         resp.title = title
         resp.continueToken = continueToken
-        resp.fromSource = fromSource
-    
 
     with ThreadPoolExecutor(max_workers=numWorkers) as executor:
 
-        branch = BFSBranch('Segment', 'The game')
+        sourceBranch = BFSBranch('Segment')
+        destBranch = BFSBranch('The game')
+        branches = [sourceBranch, destBranch]
+        branchIndex = 0
 
         session = FuturesSession(executor=executor)
         loop = asyncio.get_event_loop()
 
         while True:
-            # @TODO: somewhere this is breaking
-            intersect = branch.findIntersect()
+            intersect = sourceBranch.findIntersect(destBranch)
             if intersect:
                 print(intersect)
-                print(branch.calculatePath(intersect))
+                # Calculate path
+                sourcePath = sourceBranch.calculatePath(intersect)
+                sourcePath.reverse()
+                destPath = destBranch.calculatePath(intersect)
+                fullPath = sourcePath + [intersect] + destPath
+                print(fullPath)
                 return
-            pages = branch.dequeueAll()
+            # Get a page from current branch for each available worker, alternating between
+            # source and dest
+            pages = branches[branchIndex].dequeueN(numWorkers)
+            print('getting {} pages from branch {}'.format(len(pages), branchIndex))
             partials = [functools.partial(session.get,
                                           makeUrl(title, continueToken),
                                           background_callback=functools.partial(parseCb,
-                                                                                title=title,
-                                                                                fromSource=fromSource))
-                        for title, continueToken, fromSource in pages]
+                                                                                title=title))
+                        for title, continueToken in pages]
             futures = [
                 loop.run_in_executor(executor, partial)
                 for partial in partials
@@ -74,7 +79,9 @@ async def main():
 
             for response in await asyncio.gather(*futures):
                 result = response.result()
-                branch.addPages(result.pages, result.fromSource, result.title, result.continueToken)
+                branches[branchIndex].addPages(result.pages, result.title, result.continueToken)
+
+            branchIndex = (branchIndex + 1) % len(branches)
 
 loop = asyncio.get_event_loop()
 loop.run_until_complete(main())
