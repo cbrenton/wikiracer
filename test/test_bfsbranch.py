@@ -8,14 +8,6 @@ class TestBFSBranch(TestCase):
     def setUp(self):
         self.branch = BFSBranch()
 
-    '''
-    @patch('bfsbranch.BFSBranch.addPages')
-    def test_init_adds_source_page(self, addPagesMock):
-        branch = BFSBranch()
-        branch.init('foo')
-        addPagesMock.assert_called_once_with(['foo'])
-    '''
-
     def assertInQueue(self, item):
         assert item in self.branch._queue
         
