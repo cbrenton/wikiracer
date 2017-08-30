@@ -1,6 +1,8 @@
+# Wikiracer
+
 This is my attempt at a CLI wikiracer in python.
 
-Overview:
+## Overview
 
 In order to quickly find an intersection between the source and destination, I'm using a
 bidirectional BFS, which is significantly more efficient than a standard BFS for this. The core
@@ -19,14 +21,18 @@ intersection exists. If it does, I know that the path from source to destination
 The cache data in each branch allows me to reconstruct the path from the initial page to the
 intersection page, so I can generate the entire path trivially.
 
-Instructions:
+## Instructions
 
 Python >= 3.4
-`pip install -r requirements.txt` to install dependencies.
-`./wikiracer.py "Source Page" "Target Page"` to race. You can modify the number of concurrent
-requests with the `--workers` flag. `./wikiracer.py --help` to see usage.
 
-Strategies I tried:
+`pip install -r requirements.txt` to install dependencies.
+
+`./wikiracer.py "Source Page" "Target Page"` to race. You can modify the number of concurrent
+requests with the `--workers` flag.
+
+`./wikiracer.py --help` to see usage.
+
+## Strategies I tried
 
 I initially wrote a standard BFS to traverse the tree. While this was able to eventually find a
 path, it was not very efficient (Segment->The game in 4:30). I was able to significantly speed up
@@ -43,13 +49,13 @@ necessary pages to the queue and started the whole process again. This brought m
 time, and was in a state where I was fairly confident I couldn't speed it up much more
 (Segment->The game in 0:05).
 
-How long I spent:
+## How long I spent (roughly)
 
-Basic BFS and API wrapper - 1 hour
-Batching requests - 1 hour
-Caching pages to calculate path - 2 hours
-Initial hacky single-file async solution - 4 hours
-Design of BFSBranch class with new async architecture - 1 hour
-Refactoring to create BFSBranch class - 1 hour
-Cleanup - 1 hour
-Documentation/tests/README - 2 hours
+- Basic BFS and API wrapper - 1 hour
+- Batching requests - 1 hour
+- Caching pages to calculate path - 2 hours
+- Initial hacky single-file async solution - 4 hours
+- Design of BFSBranch class with new async architecture - 1 hour
+- Refactoring to create BFSBranch class - 1 hour
+- Cleanup - 1 hour
+- Documentation/tests/README - 2 hours
