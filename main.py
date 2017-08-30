@@ -79,8 +79,10 @@ async def createLoop(src, dest, numWorkers):
     # Create the thread pool for the event loop.
     with ThreadPoolExecutor(max_workers=numWorkers) as executor:
         # Create branches for both sides of the search.
-        sourceBranch = BFSBranch(src)
-        destBranch = BFSBranch(dest)
+        sourceBranch = BFSBranch()
+        sourceBranch.addPages([src])
+        destBranch = BFSBranch()
+        destBranch.addPages([dest])
         # We will alternate between requesting pages from the source and destination branches.
         branches = [sourceBranch, destBranch]
         branchIndex = 0

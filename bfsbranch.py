@@ -2,7 +2,7 @@ from collections import defaultdict
 
 
 class BFSBranch(object):
-    def __init__(self, source):
+    def __init__(self):
         """
         There are two main data structures used to track a branch of a bidirectional BFS.
 
@@ -30,7 +30,6 @@ class BFSBranch(object):
         """
         self._queue = []
         self._cache = defaultdict(dict)
-        self.addPages([source])
 
     def addToCache(self, title, parent=None):
         """
@@ -46,32 +45,9 @@ class BFSBranch(object):
         # Sometimes pages link to themselves. I don't know why but we shouldn't allow that.
         if title == parent:
             return
-        # Detect loops. This lets us calculate the path to intersection without getting stuck.
-        if not self.existsInPath(title, parent):
+        # Add title to cache if it isn't already present
+        if title not in self._cache: 
             self._cache[title] = {'parent': parent, 'visited': False}
-
-    # @TODO: rename this?
-    def existsInPath(self, title, parent):
-        """
-        Detect potential loops in the cache.
-
-        :param title: the page to be added
-        :type title: str
-        :param parent: the parent page for the page being added
-        :type parent: str
-        :returns: True if a loop exists, otherwise False
-        :rtype: bool
-        """
-        # Follow child->parent links until the child is found as an existing parent or the
-        # source is reached.
-        if parent:
-            cur = self._cache[parent]['parent']
-            while cur:
-                # Loop found
-                if cur == title:
-                    return True
-                cur = self._cache[cur]['parent']
-        return False
 
     def isVisited(self, title):
         """
@@ -96,7 +72,7 @@ class BFSBranch(object):
         :returns: a list of n queue items
         :rtype: [(str, str|None)]
         """
-        items = [x for x in self._queue[:n] if not self.isVisited(x)]
+        items = [x for x in self._queue[:n] if not self.isVisited(x[0])]
         self._queue = self._queue[n:]
         return items
 
