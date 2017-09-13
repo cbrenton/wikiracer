@@ -97,7 +97,7 @@ class BFSBranch(object):
             self._cache[parent]['visited'] = True
             # Add the parent back to the queue if there is a continue token
             if parentContinue:
-                queuePages.append((parent, parentContinue))
+                queuePages = [(parent, parentContinue)] + queuePages
         # Append all pages (plus the parent if there is a continue token) to the queue
         self._queue += queuePages
 

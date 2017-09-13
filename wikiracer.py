@@ -6,59 +6,10 @@ import functools
 import sys
 from concurrent.futures import ThreadPoolExecutor
 from requests_futures.sessions import FuturesSession
+import requests
 
 from bfsbranch import BFSBranch
-
-
-def makeUrl(title, continueToken=None, isSource=True):
-    """
-    Generate a url for the API request for a given page. If this is originating from the source
-    branch, it will check links. If it's originating from the destination, it will check backlinks.
-
-    :param title: the page title
-    :type title: str
-    :param continueToken: the continue token for the page, if any
-    :type continueToken: str|None
-    :returns: a url for the API request
-    :rtype: str
-    """
-    if isSource:
-        baseUrl = 'http://en.wikipedia.org/w/api.php?action=query&generator=links&format=json&titles={}&gpllimit=500{}'
-    else:
-        baseUrl = 'http://en.wikipedia.org/w/api.php?action=query&generator=backlinks&format=json&gbltitle={}&gbllimit=500{}'
-    return baseUrl.format(title, '&gplcontinue={}'.format(continueToken) if continueToken else '')
-
-
-def parseCb(_, resp, title):
-    """
-    Parse a response, adding a list of titles, a parent title, and a continue token to the response.
-    This is a callback for requests_futures.session.get(), so it doesn't return anything, but
-    rather modifies the response object for use later on.
-
-    :param resp: the response
-    :type resp: requests.models.Response
-    :param title: the title of the page from the initial request, to be used as the parent
-    :type title: str
-    """
-    data = resp.json()
-    
-    # Handle red links, which will return an empty query field, rather than a query field with an
-    # empty pages field.
-    try:
-        # This is a hacky way to determine if a page is an actual article.
-        # It would be nice if the api told us this info.
-        pages = [x['title'] for x in data['query']['pages'].values() if ':' not in x['title']]
-    except KeyError:
-        pages = []
-
-    continueToken = None
-    # Check for a continue token
-    if data.get('continue') and data.get('continue').get('gplcontinue'):
-        continueToken = data.get('continue').get('gplcontinue')
-    
-    resp.pages = pages
-    resp.title = title
-    resp.continueToken = continueToken
+from wikipedia import Wikipedia
 
 
 async def createLoop(src, dest, numWorkers):
@@ -88,6 +39,7 @@ async def createLoop(src, dest, numWorkers):
         branchIndex = 0
 
         session = FuturesSession(executor=executor)
+        wikipedia = Wikipedia(session)
         loop = asyncio.get_event_loop()
 
         # Iterate until the loop is broken, since checking for empty queues isn't a reliable way of
@@ -104,15 +56,17 @@ async def createLoop(src, dest, numWorkers):
                 destPath = destBranch.calculatePath(intersect)
                 fullPath = sourcePath + [intersect] + destPath
                 print(fullPath)
-                return
+                return fullPath
             # Get a page from current branch for each available worker, alternating between
             # source and dest
             pages = branches[branchIndex].dequeueN(numWorkers)
             # Create partial functions for each session.get
-            partials = [functools.partial(session.get,
-                                          makeUrl(title, continueToken, branchIndex == 1),
-                                          background_callback=functools.partial(parseCb,
-                                                                                title=title))
+            partials = [functools.partial(wikipedia.getLinksFrom,
+                                          title,
+                                          continueToken) if branchIndex == 0
+                        else functools.partial(wikipedia.getLinksTo,
+                                               title,
+                                               continueToken)
                         for title, continueToken in pages]
             # Create futures and add to event loop
             futures = [
@@ -128,14 +82,17 @@ async def createLoop(src, dest, numWorkers):
             # Increment the branch index
             branchIndex = (branchIndex + 1) % len(branches)
 
+def create_loop(src, dest, workers):
+    loop = asyncio.get_event_loop()
+    return loop.run_until_complete(createLoop(src, dest, workers))
+
 @click.command()
 @click.argument('src')
 @click.argument('dest')
 @click.option('--workers', type=int, default=5, help='Number of concurrent requests. ' + 
               'Counterintuitively, lower numbers tend to work better.')
 def main(src, dest, workers):
-    loop = asyncio.get_event_loop()
-    loop.run_until_complete(createLoop(src, dest, workers))
+    create_loop(src, dest, workers)
 
 if __name__ == '__main__':
     main()
